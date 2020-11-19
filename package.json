@@ -19,9 +19,10 @@
     "nodemon": "2.0.4"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "server": "node src/index.js",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "client": "npm start --prefix ../recipes"
   },
   "author": "",
   "license": "ISC"
