@@ -44,6 +44,9 @@ const RecipeSchema = new mongoose.Schema({
             }
         }
     },
+    image: {
+        type: String,
+    },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,

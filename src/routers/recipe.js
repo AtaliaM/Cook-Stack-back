@@ -7,6 +7,7 @@ const { findOneAndDelete } = require('../models/Recipe');
 
 router.post("/recipes", auth, async (req, res) => {
     // const task = new Task(req.body);
+    console.log("adding new recipe");
     const recipe = new Recipe({
         ...req.body, //copiyng all the properties from body
         owner: req.user._id
@@ -21,7 +22,7 @@ router.post("/recipes", auth, async (req, res) => {
     }
 
     console.log(recipe);
-    
+
 })
 
 router.patch("/recipes/:id", auth, async (req, res) => {
@@ -41,7 +42,7 @@ router.patch("/recipes/:id", auth, async (req, res) => {
         if (!recipe) {
             return res.status(404).send();
         }
-        
+
         updates.forEach((update) => {
             recipe[update] = req.body[update];
         })
@@ -67,6 +68,18 @@ router.get("/recipes", auth, async (req, res) => {
 
 })
 
+//get all recipes
+router.get("/allrecipes", async (req, res) => {
+    try {
+        const recipes = await Recipe.find({});
+        res.send(recipes);
+    }
+    catch (e) {
+        res.status(500).send();
+    }
+})
+
+
 router.get("/recipes/:id", auth, async (req, res) => {
     const _id = req.params.id;
 
@@ -83,9 +96,9 @@ router.get("/recipes/:id", auth, async (req, res) => {
 
 })
 
-router.delete("/recipes/:id",auth, async (req, res) => {
+router.delete("/recipes/:id", auth, async (req, res) => {
     try {
-        const recipe = await findOneAndDelete({_id: req.params.id, owner: req.user._id})
+        const recipe = await findOneAndDelete({ _id: req.params.id, owner: req.user._id })
         if (!recipe) {
             return res.status(404).send();
         }
@@ -115,7 +128,7 @@ module.exports = router;
 //     }
 
 //     console.log(recipe);
-    
+
 // })
 
 // //get all recipes//
