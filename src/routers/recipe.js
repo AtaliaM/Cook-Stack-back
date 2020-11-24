@@ -1,10 +1,13 @@
 const express = require('express');
 const router = new express.Router();
+const multer = require("multer");
+const sharp = require('sharp');
+const ejs = require('ejs'); const path = require("path");
 const Recipe = require("../models/Recipe");
 const auth = require("../middleware/auth");
 const { findOneAndDelete } = require('../models/Recipe');
 
-
+//add new recipe//
 router.post("/recipes", auth, async (req, res) => {
     // const task = new Task(req.body);
     console.log("adding new recipe");
@@ -25,9 +28,10 @@ router.post("/recipes", auth, async (req, res) => {
 
 })
 
+//update recipe//
 router.patch("/recipes/:id", auth, async (req, res) => {
     const updates = Object.keys(req.body);
-    const allowedUpdates = ["description", "complete"];
+    const allowedUpdates = ["title", "ingredients", "instructions", "image"];
     const isValidOperation = updates.every((update) => {
         return allowedUpdates.includes(update);
     })
@@ -55,7 +59,7 @@ router.patch("/recipes/:id", auth, async (req, res) => {
     }
 })
 
-
+//get user's recipes//
 router.get("/recipes", auth, async (req, res) => {
 
     try {
@@ -68,7 +72,7 @@ router.get("/recipes", auth, async (req, res) => {
 
 })
 
-//get all recipes
+//get all recipes//
 router.get("/allrecipes", async (req, res) => {
     try {
         const recipes = await Recipe.find({});
@@ -79,7 +83,24 @@ router.get("/allrecipes", async (req, res) => {
     }
 })
 
+//display user recipe by id (public route for all users to see recipe)//
+router.get("/usersrecipes/:id", async (req, res) => {
+    const _id = req.params.id;
 
+    try {
+        const recipe = await Recipe.findOne({ _id})
+        if (!recipe) {
+            return res.status(404).send();
+        }
+        res.send(recipe);
+    }
+    catch (e) {
+        res.status(500).send();
+    }
+
+})
+
+//get recipe by id//
 router.get("/recipes/:id", auth, async (req, res) => {
     const _id = req.params.id;
 
@@ -96,6 +117,7 @@ router.get("/recipes/:id", auth, async (req, res) => {
 
 })
 
+//delete recipe//
 router.delete("/recipes/:id", auth, async (req, res) => {
     try {
         const recipe = await findOneAndDelete({ _id: req.params.id, owner: req.user._id })
@@ -108,6 +130,62 @@ router.delete("/recipes/:id", auth, async (req, res) => {
         res.status(500).send(e);
     }
 })
+
+//set storage engine//
+
+const storage = multer.diskStorage({
+    destination: "/public/uploads/",
+    filename: function (req, file, cb) {
+        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+    }
+})
+
+//init upload//
+
+const upload = multer({
+    storage: storage
+}).single("img");
+
+
+// routs to upload delete and get recipe image //
+router.post('/myrecipes/recipeimage', auth, async (req, res) => {
+    const _id = req.params.id; //user id
+    const recipe = await Recipe.findOne({ _id, owner: req.user._id })
+    
+    const buffer = await sharp(req.file.buffer).resize({ width: 500, height: 500 }).png().toBuffer()
+    console.log(buffer);
+    console.log(req.user);
+    // // req.user.avatar = buffer
+    // await req.user.save()
+    console.log(req.file);
+    res.send("test");
+    // res.send()
+}, (error, req, res, next) => {
+    res.status(400).send({ error: error.message })
+})
+
+router.delete('/myrecipes/recipeimage', auth, async (req, res) => {
+    req.user.avatar = undefined
+    await req.user.save()
+    res.send(req.user)
+})
+
+router.get('/myrecipes/recipeimage', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id)
+
+        if (!user || !user.avatar) {
+            throw new Error()
+        }
+
+        res.set('Content-Type', 'image/png')
+        res.send(user.avatar)
+    } catch (e) {
+        res.status(404).send()
+    }
+})
+
+
 
 module.exports = router;
 
