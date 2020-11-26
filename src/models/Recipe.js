@@ -44,6 +44,9 @@ const RecipeSchema = new mongoose.Schema({
             }
         }
     },
+    username: {
+        type: String,
+    },
     image: {
         type: Buffer,
     },

@@ -2,10 +2,48 @@ const express = require('express');
 const router = new express.Router();
 const multer = require("multer");
 const sharp = require('sharp');
-const ejs = require('ejs'); const path = require("path");
+const ejs = require('ejs'); 
+const path = require("path");
+const crypto = require('crypto');
+const GridFsStorage = require('multer-gridfs-storage');
 const Recipe = require("../models/Recipe");
 const auth = require("../middleware/auth");
 const { findOneAndDelete } = require('../models/Recipe');
+
+
+const storage = new GridFsStorage({
+    url: 'mongodb://127.0.0.1:27017/cook-stack-api',
+    file: (req, file) => {
+      return new Promise((resolve, reject) => {
+        crypto.randomBytes(16, (err, buf) => {
+          if (err) {
+            return reject(err)
+          }
+          const filename = file.originalname
+          const fileInfo = {
+            filename: filename,
+            bucketName: 'uploads',
+          }
+          resolve(fileInfo)
+        })
+      })
+    },
+  })
+  
+  const upload = multer({ storage })
+
+  router.post('/upload',auth, upload.single('img'), async(req, res, err) => {
+      console.log(req.user);
+    console.log(req.file);
+    res.json({file:req.file})
+    try {
+        res.status(201).send()
+
+    }
+    catch(e) {
+        console.log(e);
+    }
+  })
 
 //add new recipe//
 router.post("/recipes", auth, async (req, res) => {
@@ -131,59 +169,62 @@ router.delete("/recipes/:id", auth, async (req, res) => {
     }
 })
 
+
+
+
 //set storage engine//
 
-const storage = multer.diskStorage({
-    destination: "/public/uploads/",
-    filename: function (req, file, cb) {
-        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-    }
-})
+// const storage = multer.diskStorage({
+//     destination: "/public/uploads/",
+//     filename: function (req, file, cb) {
+//         cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+//     }
+// })
 
-//init upload//
+// //init upload//
 
-const upload = multer({
-    storage: storage
-}).single("img");
+// const upload = multer({
+//     storage: storage
+// }).single("img");
 
 
-// routs to upload delete and get recipe image //
-router.post('/myrecipes/recipeimage', auth, async (req, res) => {
-    const _id = req.params.id; //user id
-    const recipe = await Recipe.findOne({ _id, owner: req.user._id })
+// // routs to upload delete and get recipe image //
+// router.post('/myrecipes/recipeimage', auth, async (req, res) => {
+//     const _id = req.params.id; //user id
+//     const recipe = await Recipe.findOne({ _id, owner: req.user._id })
     
-    const buffer = await sharp(req.file.buffer).resize({ width: 500, height: 500 }).png().toBuffer()
-    console.log(buffer);
-    console.log(req.user);
-    // // req.user.avatar = buffer
-    // await req.user.save()
-    console.log(req.file);
-    res.send("test");
-    // res.send()
-}, (error, req, res, next) => {
-    res.status(400).send({ error: error.message })
-})
+//     const buffer = await sharp(req.file.buffer).resize({ width: 500, height: 500 }).png().toBuffer()
+//     console.log(buffer);
+//     console.log(req.user);
+//     // // req.user.avatar = buffer
+//     // await req.user.save()
+//     console.log(req.file);
+//     res.send("test");
+//     // res.send()
+// }, (error, req, res, next) => {
+//     res.status(400).send({ error: error.message })
+// })
 
-router.delete('/myrecipes/recipeimage', auth, async (req, res) => {
-    req.user.avatar = undefined
-    await req.user.save()
-    res.send(req.user)
-})
+// router.delete('/myrecipes/recipeimage', auth, async (req, res) => {
+//     req.user.avatar = undefined
+//     await req.user.save()
+//     res.send(req.user)
+// })
 
-router.get('/myrecipes/recipeimage', async (req, res) => {
-    try {
-        const user = await User.findById(req.params.id)
+// router.get('/myrecipes/recipeimage', async (req, res) => {
+//     try {
+//         const user = await User.findById(req.params.id)
 
-        if (!user || !user.avatar) {
-            throw new Error()
-        }
+//         if (!user || !user.avatar) {
+//             throw new Error()
+//         }
 
-        res.set('Content-Type', 'image/png')
-        res.send(user.avatar)
-    } catch (e) {
-        res.status(404).send()
-    }
-})
+//         res.set('Content-Type', 'image/png')
+//         res.send(user.avatar)
+//     } catch (e) {
+//         res.status(404).send()
+//     }
+// })
 
 
 
